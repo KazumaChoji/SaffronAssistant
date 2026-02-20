@@ -1,6 +1,6 @@
 # SaffronAssistant
 
-An always-on-top macOS assistant I built for myself. Slides in from the edge of the screen with a hotkey, has an AI chat agent (Claude), notes, todos, a web browser, and a habit tracker. Everything lives locally in a SQLite database.
+a cool macos overlay assistant. Slides in from the edge of the screen with a hotkey, has an AI chat agent (Claude), notes, todos, a web browser, and a habit tracker. Everything lives locally in a SQLite database.
 
 ## Setup
 
