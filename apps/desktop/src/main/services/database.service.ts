@@ -388,6 +388,25 @@ export class DatabaseService {
   }
 
   /**
+   * Resets the database — drops all tables and re-initializes
+   */
+  reset(): void {
+    // Get all table names
+    const tables = this.db
+      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
+      .all() as Array<{ name: string }>;
+
+    // Drop all tables
+    for (const { name } of tables) {
+      this.db.exec(`DROP TABLE IF EXISTS "${name}"`);
+    }
+
+    // Re-create schema
+    this.initialize();
+    console.log('Database reset complete');
+  }
+
+  /**
    * Closes the database connection
    */
   close(): void {

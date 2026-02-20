@@ -357,6 +357,21 @@ export function registerHandlers(
     }
   });
 
+  // Database reset
+  ipcMain.handle('system:resetDatabase', async () => {
+    try {
+      // Terminate all agents first
+      if (services.agentManager) {
+        await services.agentManager.terminateAll();
+      }
+      services.database.reset();
+      return { success: true };
+    } catch (error: any) {
+      console.error('Failed to reset database:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
   // Register agent handlers
   if (services.agentManager) {
     registerAgentHandlers(services.agentManager, mainWindow);

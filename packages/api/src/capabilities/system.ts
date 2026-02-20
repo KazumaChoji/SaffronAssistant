@@ -122,4 +122,9 @@ export interface SystemCapability {
    * Flashes a fullscreen red overlay and plays a system beep (timer alert)
    */
   timerFlash(): Promise<void>;
+
+  /**
+   * Resets the SQLite database — drops all tables and re-creates the schema
+   */
+  resetDatabase(): Promise<{ success: boolean; error?: string }>;
 }

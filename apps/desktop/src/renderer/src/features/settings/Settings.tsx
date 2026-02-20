@@ -162,9 +162,10 @@ export function Settings({ onApiKeySet, onBack }: SettingsProps) {
           <SystemStatus anthropicSet={apiKeyStatuses.anthropic} />
         </Tile>
 
-        {/* Quit / Uninstall */}
+        {/* Reset / Quit / Uninstall */}
         <Tile className="col-span-2" noPadLabel>
           <div className="flex gap-2">
+            <ResetDatabaseButton />
             <QuitButton />
             <UninstallButton />
           </div>
@@ -344,6 +345,41 @@ function SystemStatus({ anthropicSet }: { anthropicSet: boolean }) {
         </div>
       ))}
     </div>
+  );
+}
+
+/* ── Reset Database Button (double confirmation) ── */
+function ResetDatabaseButton() {
+  const [step, setStep] = useState<0 | 1 | 2>(0);
+
+  function handleClick() {
+    if (step === 0) {
+      setStep(1);
+      setTimeout(() => setStep((s) => (s === 1 ? 0 : s)), 3000);
+    } else if (step === 1) {
+      setStep(2);
+      setTimeout(() => setStep((s) => (s === 2 ? 0 : s)), 3000);
+    } else {
+      window.api.system.resetDatabase().then(() => {
+        window.location.reload();
+      });
+    }
+  }
+
+  const labels = ['reset db', 'are you sure?', 'confirm reset'];
+  const isActive = step > 0;
+
+  return (
+    <button
+      onClick={handleClick}
+      className={`flex-1 py-2 rounded-md font-mono text-[11px] transition-all duration-150 ${
+        isActive
+          ? 'bg-red-400/10 border border-red-400/20 text-red-400/80'
+          : 'bg-white/[0.02] border border-white/[0.06] text-white/25 hover:border-white/[0.12] hover:text-white/40'
+      }`}
+    >
+      {labels[step]}
+    </button>
   );
 }
 
