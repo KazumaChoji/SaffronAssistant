@@ -1,0 +1,350 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body {
+  margin: 0;
+  overflow: hidden;
+  font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: transparent;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+#root {
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background: rgba(10, 10, 10, var(--bg-opacity, 0.45));
+  border-radius: 8px;
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
+  border-top: 0.5px solid rgba(255, 255, 255, 0.22);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 0 30px rgba(0, 0, 0, 0.35),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1),
+    inset 0 0 30px rgba(255, 255, 255, 0.03);
+}
+
+@layer components {
+  .glass-panel {
+    @apply relative;
+    background: rgba(18, 18, 18, var(--fg-opacity, 0.85));
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+  }
+
+  .glass-btn {
+    @apply relative px-3 py-1.5 rounded-lg text-white text-sm font-medium transition-all duration-200;
+    background-color: rgba(255, 255, 255, 0.03);
+  }
+
+  .glass-btn:hover {
+    background-color: rgba(255, 255, 255, 0.06);
+  }
+
+  .glass-btn:active {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .glass-input {
+    @apply relative rounded-lg px-3 py-2 transition-all duration-200;
+  }
+}
+
+/* Typing Animation */
+@keyframes pulse-dot {
+  0%, 80%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Shimmer Animation */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer-loading {
+  position: relative;
+  overflow: hidden;
+}
+.shimmer-loading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.04) 45%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.04) 55%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+/* Glass Dock */
+.glass-dock {
+  background: rgba(18, 18, 18, var(--fg-opacity, 0.85));
+  border-top: 0.5px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Auto-hide Scrollbar */
+.auto-hide-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.auto-hide-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.auto-hide-scroll::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 9999px;
+}
+.auto-hide-scroll:hover::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Logo Watermark */
+.logo-watermark {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 0;
+}
+.logo-watermark img,
+.logo-watermark-img {
+  object-fit: contain;
+  filter: invert(1);
+  mix-blend-mode: screen;
+  opacity: 0.06;
+}
+.logo-watermark img {
+  width: 140px;
+  height: 140px;
+}
+
+/* Ambient Glow Animation */
+@keyframes ambient-glow {
+  0%, 100% { opacity: 0.08; filter: blur(0px); }
+  50% { opacity: 0.14; filter: blur(1px); }
+}
+
+.ambient-glow {
+  animation: ambient-glow 4s ease-in-out infinite;
+}
+
+/* Slide-in/out transitions (GPU-accelerated) */
+#root {
+  transition: transform var(--slide-duration, 100ms) cubic-bezier(0.68, 0, 0.32, 1), opacity var(--slide-duration, 100ms) ease-out;
+  will-change: transform;
+}
+
+#root.slide-offscreen-top    { transform: translateY(-100%); opacity: 0; }
+#root.slide-offscreen-bottom { transform: translateY(100%);  opacity: 0; }
+#root.slide-offscreen-left   { transform: translateX(-100%); opacity: 0; }
+#root.slide-offscreen-right  { transform: translateX(100%);  opacity: 0; }
+
+#root.slide-visible {
+  transform: translate(0, 0);
+  opacity: 1;
+}
+
+/* Notes Editor */
+.notes-editor {
+  color: rgba(255, 255, 255, 0.85);
+  font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+  font-size: 13px;
+  line-height: 1.7;
+  caret-color: rgba(255, 255, 255, 0.7);
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.notes-editor:empty::before {
+  content: 'Start typing...';
+  color: rgba(255, 255, 255, 0.2);
+  pointer-events: none;
+}
+
+.notes-editor img {
+  max-width: 100%;
+  border-radius: 6px;
+  margin: 6px 0;
+  display: block;
+}
+
+/* Notes history undo/redo */
+.notes-history-btn {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  padding: 0;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.notes-history-btn:hover:not(:disabled) {
+  opacity: 0.8 !important;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.notes-history-btn:active:not(:disabled) {
+  opacity: 1 !important;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.notes-history-btn:disabled {
+  cursor: default;
+}
+
+/* Image action buttons */
+.img-action-btn:hover {
+  background: rgba(0, 0, 0, 0.65) !important;
+}
+
+.img-action-btn:active {
+  background: rgba(0, 0, 0, 0.8) !important;
+  transform: scale(0.92);
+}
+
+.img-resize-handle:hover {
+  background: rgba(120, 180, 255, 1) !important;
+  transform: scale(1.2);
+}
+
+/* Todo List */
+.todo-input::placeholder {
+  color: rgba(255, 255, 255, 0.25);
+}
+
+.todo-input:focus {
+  border-color: rgba(255, 255, 255, 0.25) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Search loading bar */
+@keyframes search-loading {
+  0% { width: 0%; margin-left: 0; }
+  50% { width: 60%; margin-left: 20%; }
+  100% { width: 0%; margin-left: 100%; }
+}
+
+.search-url-input:focus {
+  border-color: rgba(255, 255, 255, 0.25) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Row hover */
+.todo-item:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Circle hover */
+.todo-circle:hover {
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Tracker Calendar */
+.tracker-calendar.rdp-root {
+  --rdp-accent-color: rgba(120, 220, 120, 0.7);
+  --rdp-accent-background-color: rgba(120, 220, 120, 0.12);
+  --rdp-day-width: 36px;
+  --rdp-day-height: 36px;
+  --rdp-day_button-width: 34px;
+  --rdp-day_button-height: 34px;
+  --rdp-day_button-border-radius: 8px;
+  --rdp-today-color: rgba(255, 255, 255, 0.9);
+  --rdp-outside-opacity: 0.2;
+  --rdp-selected-border: 2px solid transparent;
+  --rdp-nav-height: 2.25rem;
+  --rdp-nav_button-width: 1.75rem;
+  --rdp-nav_button-height: 1.75rem;
+  font-family: 'JetBrains Mono', monospace;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.tracker-calendar .rdp-month_caption {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.tracker-calendar .rdp-weekday {
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.tracker-calendar .rdp-day_button {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  transition: background 0.15s ease;
+}
+
+.tracker-calendar .rdp-day_button:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.tracker-calendar .rdp-outside .rdp-day_button {
+  color: rgba(255, 255, 255, 0.15);
+}
+
+.tracker-calendar .rdp-today .rdp-day_button {
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+}
+
+.tracker-calendar .rdp-chevron {
+  fill: rgba(255, 255, 255, 0.4);
+}
+
+.tracker-calendar .rdp-button_next:hover .rdp-chevron,
+.tracker-calendar .rdp-button_previous:hover .rdp-chevron {
+  fill: rgba(255, 255, 255, 0.7);
+}
+
+.tracker-calendar .rdp-button_next:hover,
+.tracker-calendar .rdp-button_previous:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+}
+
+/* Checked day modifier */
+.tracker-calendar .tracker-checked .rdp-day_button {
+  background: rgba(120, 220, 120, 0.15);
+  color: rgba(120, 220, 120, 0.9);
+  font-weight: 600;
+}
+
+.tracker-calendar .tracker-checked.rdp-today .rdp-day_button {
+  border-color: rgba(120, 220, 120, 0.4);
+}

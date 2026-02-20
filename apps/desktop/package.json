@@ -1,0 +1,44 @@
+{
+  "name": "desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SaffronAssistant Desktop App",
+  "main": "dist-electron/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "clean": "rm -rf dist dist-electron",
+    "postinstall": "electron-rebuild"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.0",
+    "@app/api": "workspace:*",
+    "@app/domain": "workspace:*",
+    "@types/node": "^20.19.31",
+    "better-sqlite3": "^11.6.0",
+    "duck-duck-scrape": "^2.2.7",
+    "mathjs": "^15.1.1",
+    "replicate": "^1.0.1"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^4.0.3",
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/dompurify": "^3.2.0",
+    "@types/react": "^18.2.48",
+    "@types/react-dom": "^18.2.18",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.17",
+    "dompurify": "^3.3.1",
+    "electron": "^28.1.4",
+    "electron-vite": "^2.0.0",
+    "postcss": "^8.4.33",
+    "react": "^18.2.0",
+    "react-day-picker": "^9.13.2",
+    "react-dom": "^18.2.0",
+    "react-markdown": "^9.0.1",
+    "tailwindcss": "^3.4.1",
+    "vite": "^5.0.11",
+    "zustand": "^4.4.7"
+  }
+}
