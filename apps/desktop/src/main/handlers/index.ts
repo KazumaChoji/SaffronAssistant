@@ -165,6 +165,66 @@ export function registerHandlers(
     await shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture');
   });
 
+  // Timer flash: fullscreen red overlay + system beep
+  ipcMain.handle('system:timerFlash', async () => {
+    // BrowserWindow and screen are type-only in this file's top-level import,
+    // so access via require to ensure they're available as values.
+    const { BrowserWindow: BW, screen: scr } = require('electron');
+
+    // Unhide the app so the overlay can appear even when the window was hidden
+    const wasHidden = !mainWindow.isVisible();
+    if (wasHidden && process.platform === 'darwin') {
+      app.show();
+    }
+
+    shell.beep();
+
+    const display = scr.getDisplayNearestPoint(scr.getCursorScreenPoint());
+    const { x, y, width, height } = display.bounds;
+
+    const overlay = new BW({
+      x, y, width, height,
+      frame: false,
+      transparent: true,
+      alwaysOnTop: true,
+      skipTaskbar: true,
+      focusable: false,
+      hasShadow: false,
+      resizable: false,
+      movable: false,
+      show: false,
+      backgroundColor: '#00000000',
+      webPreferences: { contextIsolation: true, nodeIntegration: false },
+    });
+
+    overlay.setIgnoreMouseEvents(true);
+    if (process.platform === 'darwin') {
+      overlay.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+      overlay.setAlwaysOnTop(true, 'screen-saver', 2);
+    }
+
+    const html = '<!DOCTYPE html><html><head><style>'
+      + '*{margin:0;padding:0}'
+      + 'html,body{width:100%;height:100%;background:transparent}'
+      + 'body{background:rgba(255,40,40,0.18);animation:flash 0.5s ease-in-out 4}'
+      + '@keyframes flash{0%,100%{opacity:1}50%{opacity:0}}'
+      + '</style></head><body></body></html>';
+
+    overlay.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
+
+    overlay.webContents.once('did-finish-load', () => {
+      if (!overlay.isDestroyed()) overlay.showInactive();
+    });
+
+    setTimeout(() => {
+      if (!overlay.isDestroyed()) overlay.close();
+      // Re-hide the app if it was hidden before the flash
+      if (wasHidden && process.platform === 'darwin') {
+        app.hide();
+      }
+    }, 2500);
+  });
+
   // Notes handlers
   ipcMain.handle('notes:getContent', async (_event, noteId?: string) => {
     try {

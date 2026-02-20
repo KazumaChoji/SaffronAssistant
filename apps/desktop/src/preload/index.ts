@@ -75,6 +75,7 @@ const systemAPI: SystemCapability = {
   },
   getScreenRecordingStatus: () => ipcRenderer.invoke('system:getScreenRecordingStatus'),
   openScreenRecordingPrefs: () => ipcRenderer.invoke('system:openScreenRecordingPrefs'),
+  timerFlash: () => ipcRenderer.invoke('system:timerFlash'),
 };
 
 // Agent API - fixed: use per-handler removeListener instead of removeAllListeners

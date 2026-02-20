@@ -5,9 +5,10 @@ import { NotesEditor } from '../features/notes/NotesEditor';
 import { TodoList } from '../features/todos/TodoList';
 import { SearchBrowser } from '../features/search/SearchBrowser';
 import { Tracker } from '../features/tracker/Tracker';
+import { Clock } from '../features/clock/Clock';
 import { Onboarding } from '../features/onboarding/Onboarding';
 
-type View = 'assistant' | 'settings' | 'notes' | 'todos' | 'search' | 'tracker';
+type View = 'assistant' | 'settings' | 'notes' | 'todos' | 'search' | 'tracker' | 'clock';
 
 const ONBOARDING_DONE_KEY = 'saffron:onboarding-complete';
 
@@ -114,6 +115,7 @@ export default function App() {
       else if (e.key === '3') { e.preventDefault(); setView('todos'); }
       else if (e.key === '4') { e.preventDefault(); setView('search'); }
       else if (e.key === '5') { e.preventDefault(); setView('tracker'); }
+      else if (e.key === '6') { e.preventDefault(); setView('clock'); }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
@@ -161,7 +163,7 @@ export default function App() {
           </button>
 
           <div className="flex gap-0.5 rounded-full p-0.5" style={{ background: 'rgba(255,255,255,0.06)' }}>
-            {([['assistant', 'Chat', '1'], ['notes', 'Notes', '2'], ['todos', 'Todos', '3'], ['search', 'Search', '4'], ['tracker', 'Tracker', '5']] as const).map(([tab, label, num]) => (
+            {([['assistant', 'Chat', '1'], ['notes', 'Notes', '2'], ['todos', 'Todos', '3'], ['search', 'Search', '4'], ['tracker', 'Tracker', '5'], ['clock', 'Clock', '6']] as const).map(([tab, label, num]) => (
               <button
                 key={tab}
                 onClick={() => setView(tab)}
@@ -216,6 +218,9 @@ export default function App() {
             </div>
             <div className="absolute inset-0 flex flex-col" style={{ display: view === 'tracker' ? 'flex' : 'none' }}>
               <Tracker />
+            </div>
+            <div className="absolute inset-0 flex flex-col" style={{ display: view === 'clock' ? 'flex' : 'none' }}>
+              <Clock />
             </div>
           </>
         )}

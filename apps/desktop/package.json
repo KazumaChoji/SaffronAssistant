@@ -5,7 +5,7 @@
   "description": "SaffronAssistant Desktop App",
   "main": "dist-electron/main/index.js",
   "scripts": {
-    "dev": "electron-vite dev",
+    "dev": "rm -rf dist-electron && electron-vite dev",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "clean": "rm -rf dist dist-electron",

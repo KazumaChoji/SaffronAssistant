@@ -117,4 +117,9 @@ export interface SystemCapability {
    * Opens System Settings to the Screen Recording permission pane
    */
   openScreenRecordingPrefs(): Promise<void>;
+
+  /**
+   * Flashes a fullscreen red overlay and plays a system beep (timer alert)
+   */
+  timerFlash(): Promise<void>;
 }
