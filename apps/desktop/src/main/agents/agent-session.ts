@@ -23,7 +23,6 @@ import { ToolExecutor } from './tool-executor';
 import { ClaudeAPIService } from '../services/claude-api.service';
 import type { BrowserWindow } from 'electron';
 import type { ScreenCaptureService } from '../services/screen-capture.service';
-import type { KeychainService } from '../services/keychain.service';
 import { AppConfig } from '../config/app-config';
 
 export type AgentStatus = 'idle' | 'thinking' | 'executing_tools' | 'waiting_approval';
@@ -50,14 +49,13 @@ export class AgentSession {
     mainWindow: BrowserWindow,
     apiService: ClaudeAPIService,
     screenCapture?: ScreenCaptureService,
-    keychain?: KeychainService
   ) {
     this.id = this.generateId();
     this.profile = config.profile;
     this.maxIterations = config.max_iterations || config.profile.max_iterations;
     this.workingDirectory = config.working_directory || process.cwd();
 
-    this.registry = createToolRegistry(screenCapture, keychain);
+    this.registry = createToolRegistry(screenCapture);
     this.permissionManager = new PermissionManager(this.profile, mainWindow, this.registry);
     this.toolExecutor = new ToolExecutor(this.registry);
     this.apiService = apiService;

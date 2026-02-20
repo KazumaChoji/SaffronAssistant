@@ -24,7 +24,7 @@ export function createImageGenerationTool(getApiKey: () => Promise<string | null
       const auth = await getApiKey();
 
       if (!auth) {
-        return 'Error: Replicate API key not configured. Please set it in Settings > API Keys.';
+        return 'Error: Replicate API key not configured. Set REPLICATE_API_TOKEN in apps/desktop/.env';
       }
 
       const replicate = new Replicate({ auth });

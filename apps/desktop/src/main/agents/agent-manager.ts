@@ -14,7 +14,6 @@ import { getProfile } from './profiles';
 import type { DatabaseService } from '../services/database.service';
 import type { ClaudeAPIService } from '../services/claude-api.service';
 import type { ScreenCaptureService } from '../services/screen-capture.service';
-import type { KeychainService } from '../services/keychain.service';
 import { AppConfig } from '../config/app-config';
 
 export class AgentManager extends EventEmitter {
@@ -23,7 +22,6 @@ export class AgentManager extends EventEmitter {
   private mainWindow: BrowserWindow;
   private database: DatabaseService;
   private screenCapture?: ScreenCaptureService;
-  private keychain?: KeychainService;
   private maxConcurrentAgents: number = AppConfig.agents.maxConcurrent;
   private initialized = false;
 
@@ -32,14 +30,12 @@ export class AgentManager extends EventEmitter {
     database: DatabaseService,
     claudeAPI: ClaudeAPIService,
     screenCapture?: ScreenCaptureService,
-    keychain?: KeychainService
   ) {
     super();
     this.mainWindow = mainWindow;
     this.database = database;
     this.apiService = claudeAPI;
     this.screenCapture = screenCapture;
-    this.keychain = keychain;
   }
 
   initialize(apiKey: string): void {
@@ -74,7 +70,7 @@ export class AgentManager extends EventEmitter {
       max_iterations: config?.max_iterations,
     };
 
-    const session = new AgentSession(sessionConfig, this.mainWindow, this.apiService, this.screenCapture, this.keychain);
+    const session = new AgentSession(sessionConfig, this.mainWindow, this.apiService, this.screenCapture);
 
     this.activeAgents.set(session.id, session);
 

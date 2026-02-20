@@ -1,26 +1,27 @@
-import { ipcMain, BrowserWindow, app, shell } from 'electron';
+import { ipcMain, BrowserWindow, app, shell, systemPreferences } from 'electron';
 import { rm } from 'fs/promises';
 import type { ScreenCaptureService } from '../services/screen-capture.service';
 import type { ClaudeAPIService } from '../services/claude-api.service';
 import type { DatabaseService } from '../services/database.service';
-import type { KeychainService } from '../services/keychain.service';
-import type { ApiKeyService } from '../services/keychain.service';
 import type { AgentManager } from '../agents';
 import type { TransparencyManager } from '../windows/transparency-manager';
 import type { QuickTerminalWindow } from '../windows/quick-terminal';
-import type { AppSettings } from '@app/api';
+import type { AppSettings, ApiKeyService } from '@app/api';
 import { registerAgentHandlers } from '../agents';
 import { AppConfig, type Position } from '../config/app-config';
 
-const VALID_API_KEY_SERVICES = ['anthropic', 'replicate'] as const;
 const VALID_POSITIONS: Position[] = ['top', 'bottom', 'left', 'right'];
 const MAX_TODO_TEXT_LENGTH = 1000;
+
+const ENV_KEY_MAP: Record<ApiKeyService, string> = {
+  anthropic: 'ANTHROPIC_API_KEY',
+  replicate: 'REPLICATE_API_TOKEN',
+};
 
 interface Services {
   screenCapture: ScreenCaptureService;
   claudeAPI: ClaudeAPIService;
   database: DatabaseService;
-  keychain: KeychainService;
   agentManager: AgentManager | null;
   transparencyManager: TransparencyManager | null;
   quickTerminal: QuickTerminalWindow | null;
@@ -43,57 +44,18 @@ export function registerHandlers(
     }
   });
 
-  // Settings handlers - API keys never sent to renderer, only booleans
+  // Settings handlers - API keys read from process.env (.env file)
   ipcMain.handle('settings:hasApiKey', async (_event, service: ApiKeyService) => {
-    if (!VALID_API_KEY_SERVICES.includes(service as any)) {
-      throw new Error(`Invalid service: ${service}`);
-    }
-    try {
-      return await services.keychain.hasKey(service);
-    } catch (error) {
-      console.error(`Failed to check ${service} API key:`, error);
-      return false;
-    }
-  });
-
-  ipcMain.handle('settings:setApiKey', async (_event, service: ApiKeyService, key: string) => {
-    if (!VALID_API_KEY_SERVICES.includes(service as any)) {
-      throw new Error(`Invalid service: ${service}`);
-    }
-    try {
-      await services.keychain.setKey(service, key);
-      // Re-initialize Claude API if anthropic key changed
-      if (service === 'anthropic') {
-        services.claudeAPI.initialize(key);
-        if (services.agentManager) {
-          services.agentManager.initialize(key);
-        }
-      }
-    } catch (error) {
-      console.error(`Failed to set ${service} API key:`, error);
-      throw error;
-    }
-  });
-
-  ipcMain.handle('settings:deleteApiKey', async (_event, service: ApiKeyService) => {
-    if (!VALID_API_KEY_SERVICES.includes(service as any)) {
-      throw new Error(`Invalid service: ${service}`);
-    }
-    try {
-      return await services.keychain.deleteKey(service);
-    } catch (error) {
-      console.error(`Failed to delete ${service} API key:`, error);
-      return false;
-    }
+    const envVar = ENV_KEY_MAP[service];
+    if (!envVar) return false;
+    return !!process.env[envVar];
   });
 
   ipcMain.handle('settings:getApiKeyStatuses', async () => {
-    try {
-      return await services.keychain.getKeyStatuses();
-    } catch (error) {
-      console.error('Failed to get API key statuses:', error);
-      return { anthropic: false, replicate: false };
-    }
+    return {
+      anthropic: !!process.env.ANTHROPIC_API_KEY,
+      replicate: !!process.env.REPLICATE_API_TOKEN,
+    };
   });
 
   ipcMain.handle('settings:getSettings', async () => {
@@ -114,7 +76,7 @@ export function registerHandlers(
   ipcMain.handle(
     'settings:updateSettings',
     async (_event, _settings: Partial<AppSettings>) => {
-      // TODO: persist settings
+      // no-op for now
     }
   );
 
@@ -191,6 +153,16 @@ export function registerHandlers(
 
   ipcMain.handle('system:getFgOpacity', async () => {
     return services.transparencyManager?.getFgOpacity() ?? AppConfig.foreground.default;
+  });
+
+  // Permission handlers
+  ipcMain.handle('system:getScreenRecordingStatus', async () => {
+    if (process.platform !== 'darwin') return 'granted';
+    return systemPreferences.getMediaAccessStatus('screen');
+  });
+
+  ipcMain.handle('system:openScreenRecordingPrefs', async () => {
+    await shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture');
   });
 
   // Notes handlers

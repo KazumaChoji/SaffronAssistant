@@ -21,13 +21,13 @@ function formatModelName(model: string | undefined): string {
   return MODEL_DISPLAY_NAMES[model] ?? model;
 }
 
-const API_KEY_SERVICES: { service: ApiKeyService; label: string; placeholder: string; required?: boolean }[] = [
-  { service: 'anthropic', label: 'anthropic', placeholder: 'sk-ant-...', required: true },
-  { service: 'replicate', label: 'replicate', placeholder: 'r8_...'},
+const API_KEY_SERVICES: { service: ApiKeyService; label: string; envVar: string; required?: boolean }[] = [
+  { service: 'anthropic', label: 'anthropic', envVar: 'ANTHROPIC_API_KEY', required: true },
+  { service: 'replicate', label: 'replicate', envVar: 'REPLICATE_API_TOKEN' },
 ];
 
 export function Settings({ onApiKeySet, onBack }: SettingsProps) {
-  const { apiKeyStatuses, settings, isLoading, error, loadSettings, saveApiKey, deleteApiKey } =
+  const { apiKeyStatuses, settings, isLoading, error, loadSettings } =
     useSettings();
   const [opacity, setOpacity] = useState(0.95);
   const [fgOpacity, setFgOpacity] = useState(0.85);
@@ -65,12 +65,12 @@ export function Settings({ onApiKeySet, onBack }: SettingsProps) {
     window.api.system.setPosition(pos);
   }, []);
 
-  async function handleSaveApiKey(service: ApiKeyService, key: string) {
-    await saveApiKey(service, key);
-    if (service === 'anthropic' && onApiKeySet) {
+  // Check if anthropic key is set and notify parent
+  useEffect(() => {
+    if (apiKeyStatuses.anthropic && onApiKeySet) {
       onApiKeySet();
     }
-  }
+  }, [apiKeyStatuses.anthropic, onApiKeySet]);
 
   if (isLoading && !settings) {
     return (
@@ -116,21 +116,17 @@ export function Settings({ onApiKeySet, onBack }: SettingsProps) {
         {/* API Keys */}
         <Tile label="api keys" className="col-span-2">
           <div className="space-y-2.5">
-            {API_KEY_SERVICES.map(({ service, label, placeholder, required }) => (
-              <APIKeyRow
+            {API_KEY_SERVICES.map(({ service, label, envVar, required }) => (
+              <APIKeyStatus
                 key={service}
-                service={service}
                 label={label}
-                placeholder={placeholder}
+                envVar={envVar}
                 isSet={apiKeyStatuses[service]}
                 required={required}
-                onSave={(key) => handleSaveApiKey(service, key)}
-                onDelete={() => deleteApiKey(service)}
-                isLoading={isLoading}
               />
             ))}
           </div>
-          <p className="text-[9px] text-white/15 font-mono mt-2.5">encrypted and stored locally on this device. never sent anywhere except the API provider.</p>
+          <p className="text-[9px] text-white/15 font-mono mt-2.5">set keys in <span className="text-white/30">apps/desktop/.env</span></p>
         </Tile>
 
         {/* Model */}
@@ -197,95 +193,22 @@ function Tile({ label, className = '', noPadLabel, children }: {
   );
 }
 
-/* ── API Key Row ── */
-function APIKeyRow({ service, label, placeholder, isSet, required, onSave, onDelete, isLoading }: {
-  service: ApiKeyService;
+/* ── API Key Status ── */
+function APIKeyStatus({ label, envVar, isSet, required }: {
   label: string;
-  placeholder: string;
+  envVar: string;
   isSet: boolean;
   required?: boolean;
-  onSave: (key: string) => Promise<void>;
-  onDelete: () => Promise<void>;
-  isLoading: boolean;
 }) {
-  const [key, setKey] = useState('');
-  const [editing, setEditing] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
-
-  async function handleSave() {
-    if (!key.trim()) return;
-    try {
-      await onSave(key.trim());
-      setSaveSuccess(true);
-      setKey('');
-      setEditing(false);
-      setTimeout(() => setSaveSuccess(false), 1500);
-    } catch {}
-  }
-
   return (
-    <div>
-      <div className="flex items-center gap-2 mb-1.5">
-        <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-          isSet ? 'bg-green-400/80' : 'bg-white/15'
-        }`} />
-        <span className="text-[11px] text-white/50 font-mono flex-1">{label}</span>
-        {required && !isSet && (
-          <span className="text-[8px] text-red-400/60 font-mono">required</span>
-        )}
-        {isSet && !editing && (
-          <div className="flex gap-1">
-            <button
-              onClick={() => setEditing(true)}
-              className="text-[9px] text-white/25 hover:text-white/50 font-mono transition-colors"
-            >
-              change
-            </button>
-            {!required && (
-              <button
-                onClick={onDelete}
-                className="text-[9px] text-red-400/40 hover:text-red-400/70 font-mono transition-colors"
-              >
-                remove
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-      {(!isSet || editing) && (
-        <div className="flex gap-1.5">
-          <input
-            type="password"
-            value={key}
-            onChange={(e) => setKey(e.target.value)}
-            placeholder={placeholder}
-            disabled={isLoading}
-            className="flex-1 bg-white/[0.02] border border-white/[0.06] rounded-[5px] px-2.5 py-[5px] font-mono text-[11px] text-white/85 outline-none placeholder:text-white/20 focus:border-white/[0.14] transition-colors duration-150 disabled:opacity-40"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleSave();
-              if (e.key === 'Escape') { setEditing(false); setKey(''); }
-            }}
-          />
-          <button
-            onClick={handleSave}
-            disabled={!key.trim() || isLoading}
-            className={`px-3 py-[5px] rounded-[5px] border font-mono text-[10px] transition-all duration-150 disabled:opacity-30 ${
-              saveSuccess
-                ? 'bg-green-400/[0.06] border-green-400/20 text-green-400/80'
-                : 'bg-white/[0.04] border-white/[0.06] text-white/40 hover:border-white/[0.14] hover:text-white/70'
-            }`}
-          >
-            {saveSuccess ? 'saved' : 'save'}
-          </button>
-          {editing && (
-            <button
-              onClick={() => { setEditing(false); setKey(''); }}
-              className="px-2 py-[5px] rounded-[5px] border border-white/[0.06] font-mono text-[10px] text-white/30 hover:text-white/50 transition-all duration-150"
-            >
-              cancel
-            </button>
-          )}
-        </div>
+    <div className="flex items-center gap-2">
+      <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+        isSet ? 'bg-green-400/80' : 'bg-white/15'
+      }`} />
+      <span className="text-[11px] text-white/50 font-mono flex-1">{label}</span>
+      <span className="text-[9px] text-white/20 font-mono">{envVar}</span>
+      {required && !isSet && (
+        <span className="text-[8px] text-red-400/60 font-mono">missing</span>
       )}
     </div>
   );

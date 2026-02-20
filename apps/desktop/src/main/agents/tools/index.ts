@@ -6,15 +6,14 @@ import { createScreenshotTool } from './screenshot';
 import { createImageGenerationTool } from './image-generation';
 import { executeCodeTool } from './execute-code';
 import type { ScreenCaptureService } from '../../services/screen-capture.service';
-import type { KeychainService } from '../../services/keychain.service';
 
-export function createToolRegistry(screenCapture?: ScreenCaptureService, keychain?: KeychainService): ToolRegistry {
+export function createToolRegistry(screenCapture?: ScreenCaptureService): ToolRegistry {
   const registry = new ToolRegistry();
   registry.register(webSearchTool);
   registry.register(webFetchTool);
   registry.register(calculatorTool);
   registry.register(executeCodeTool);
-  registry.register(createImageGenerationTool(() => keychain?.getKey('replicate') ?? Promise.resolve(null)));
+  registry.register(createImageGenerationTool(() => Promise.resolve(process.env.REPLICATE_API_TOKEN ?? null)));
   if (screenCapture) {
     registry.register(createScreenshotTool(screenCapture));
     console.log('[tools] Screenshot tool registered');

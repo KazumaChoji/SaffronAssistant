@@ -1,20 +1,23 @@
 import { app, globalShortcut } from 'electron';
+import { config } from 'dotenv';
+import { join } from 'path';
 import { TransparencyManager } from './windows/transparency-manager';
 import { QuickTerminalWindow } from './windows/quick-terminal';
 import { ScreenCaptureService } from './services/screen-capture.service';
 import { ClaudeAPIService } from './services/claude-api.service';
 import { DatabaseService } from './services/database.service';
-import { KeychainService } from './services/keychain.service';
 import { AgentManager } from './agents';
 import { registerHandlers } from './handlers/index';
 import { AppConfig } from './config/app-config';
+
+// Load .env from the desktop app root (apps/desktop/.env)
+config({ path: join(__dirname, '../../.env') });
 
 // Initialize services
 const services = {
   screenCapture: new ScreenCaptureService(AppConfig.screenshot.maxHeight, AppConfig.screenshot.jpegQuality),
   claudeAPI: new ClaudeAPIService(),
   database: new DatabaseService(),
-  keychain: null as KeychainService | null,
   agentManager: null as AgentManager | null,
   transparencyManager: null as TransparencyManager | null,
   quickTerminal: null as QuickTerminalWindow | null,
@@ -97,9 +100,6 @@ function registerShortcuts(): void {
  * App lifecycle: ready
  */
 app.whenReady().then(() => {
-  // Initialize keychain (requires app ready for safeStorage)
-  services.keychain = new KeychainService(services.database);
-
   // Create the sole window
   services.quickTerminal = new QuickTerminalWindow();
   const win = services.quickTerminal.getWindow();
@@ -113,24 +113,19 @@ app.whenReady().then(() => {
     services.database,
     services.claudeAPI,
     services.screenCapture,
-    services.keychain!
   );
 
-  // Initialize with API key if available
-  services.keychain!.getApiKey().then((apiKey) => {
-    if (apiKey && services.agentManager) {
-      services.agentManager.initialize(apiKey);
-      console.log('AgentManager initialized with stored API key');
-    }
-  }).catch((error) => {
-    console.error('Failed to initialize AgentManager:', error);
-  });
+  // Initialize with API key from .env if available
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (apiKey && services.agentManager) {
+    services.agentManager.initialize(apiKey);
+    console.log('AgentManager initialized with API key from .env');
+  }
 
   registerHandlers({
     screenCapture: services.screenCapture,
     claudeAPI: services.claudeAPI,
     database: services.database,
-    keychain: services.keychain!,
     agentManager: services.agentManager,
     transparencyManager: services.transparencyManager,
     quickTerminal: services.quickTerminal,

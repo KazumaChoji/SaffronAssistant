@@ -5,12 +5,16 @@ import { NotesEditor } from '../features/notes/NotesEditor';
 import { TodoList } from '../features/todos/TodoList';
 import { SearchBrowser } from '../features/search/SearchBrowser';
 import { Tracker } from '../features/tracker/Tracker';
+import { Onboarding } from '../features/onboarding/Onboarding';
 
 type View = 'assistant' | 'settings' | 'notes' | 'todos' | 'search' | 'tracker';
+
+const ONBOARDING_DONE_KEY = 'saffron:onboarding-complete';
 
 export default function App() {
   const [view, setView] = useState<View>('assistant');
   const [apiKeySet, setApiKeySet] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     checkApiKey();
@@ -75,17 +79,23 @@ export default function App() {
     try {
       const has = await window.api.settings.hasApiKey('anthropic');
       setApiKeySet(has);
-      if (!has) {
-        setView('settings');
+      if (!has && !localStorage.getItem(ONBOARDING_DONE_KEY)) {
+        setShowOnboarding(true);
       }
     } catch (error) {
       console.error('Failed to check API key:', error);
     }
   }
 
+  function handleOnboardingComplete() {
+    localStorage.setItem(ONBOARDING_DONE_KEY, '1');
+    setShowOnboarding(false);
+    // Re-check api key status after onboarding
+    checkApiKey();
+  }
+
   function handleApiKeySet() {
     setApiKeySet(true);
-    setView('assistant');
   }
 
   function handleRefresh() {
@@ -123,6 +133,14 @@ export default function App() {
   const showTabs = apiKeySet && view !== 'settings';
 
   const showSettings = view === 'settings' || !apiKeySet;
+
+  if (showOnboarding) {
+    return (
+      <div className="h-full w-full">
+        <Onboarding onComplete={handleOnboardingComplete} />
+      </div>
+    );
+  }
 
   return (
     <div className="h-full w-full flex flex-col">

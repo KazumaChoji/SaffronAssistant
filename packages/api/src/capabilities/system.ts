@@ -107,4 +107,14 @@ export interface SystemCapability {
    * Registers a callback for the slide-out animation event
    */
   onAnimateOut(callback: (position: 'top' | 'bottom' | 'left' | 'right', durationMs: number) => void): () => void;
+
+  /**
+   * Gets macOS screen recording permission status
+   */
+  getScreenRecordingStatus(): Promise<'granted' | 'denied' | 'not-determined'>;
+
+  /**
+   * Opens System Settings to the Screen Recording permission pane
+   */
+  openScreenRecordingPrefs(): Promise<void>;
 }

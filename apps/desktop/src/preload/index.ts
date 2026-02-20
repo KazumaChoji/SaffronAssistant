@@ -20,11 +20,9 @@ const screenAPI: ScreenCapability = {
   captureScreen: () => ipcRenderer.invoke('screen:capture'),
 };
 
-// Settings API - API keys never cross to renderer, only booleans
+// Settings API - API keys are read from .env, only booleans cross to renderer
 const settingsAPI: SettingsCapability = {
   hasApiKey: (service) => ipcRenderer.invoke('settings:hasApiKey', service),
-  setApiKey: (service, key) => ipcRenderer.invoke('settings:setApiKey', service, key),
-  deleteApiKey: (service) => ipcRenderer.invoke('settings:deleteApiKey', service),
   getApiKeyStatuses: () => ipcRenderer.invoke('settings:getApiKeyStatuses'),
   getSettings: () => ipcRenderer.invoke('settings:getSettings'),
   updateSettings: (settings) =>
@@ -75,6 +73,8 @@ const systemAPI: SystemCapability = {
     ipcRenderer.on('window:animate-out', handler);
     return () => ipcRenderer.removeListener('window:animate-out', handler);
   },
+  getScreenRecordingStatus: () => ipcRenderer.invoke('system:getScreenRecordingStatus'),
+  openScreenRecordingPrefs: () => ipcRenderer.invoke('system:openScreenRecordingPrefs'),
 };
 
 // Agent API - fixed: use per-handler removeListener instead of removeAllListeners

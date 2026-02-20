@@ -127,7 +127,7 @@ export class DatabaseService {
       );
     `);
 
-    // Create secrets table (encrypted API keys via safeStorage)
+    // Legacy secrets table (no longer used - API keys now read from .env)
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS secrets (
         key TEXT PRIMARY KEY,
@@ -385,21 +385,6 @@ export class DatabaseService {
 
   setTrackerTitle(title: string): void {
     this.db.prepare("INSERT OR REPLACE INTO tracker_config (key, value) VALUES ('title', ?)").run(title);
-  }
-
-  // ── Secrets ──
-
-  getSecret(key: string): string | null {
-    const row = this.db.prepare('SELECT value FROM secrets WHERE key = ?').get(key) as { value: string } | undefined;
-    return row?.value ?? null;
-  }
-
-  setSecret(key: string, value: string): void {
-    this.db.prepare('INSERT OR REPLACE INTO secrets (key, value) VALUES (?, ?)').run(key, value);
-  }
-
-  deleteSecret(key: string): void {
-    this.db.prepare('DELETE FROM secrets WHERE key = ?').run(key);
   }
 
   /**

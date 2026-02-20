@@ -9,8 +9,6 @@ interface SettingsStore {
 
   // Actions
   loadSettings: () => Promise<void>;
-  saveApiKey: (service: ApiKeyService, key: string) => Promise<void>;
-  deleteApiKey: (service: ApiKeyService) => Promise<void>;
   updateSettings: (settings: Partial<AppSettings>) => Promise<void>;
 }
 
@@ -40,43 +38,6 @@ export const useSettings = create<SettingsStore>((set) => ({
       set({
         isLoading: false,
         error: error instanceof Error ? error.message : 'Failed to load settings',
-      });
-    }
-  },
-
-  saveApiKey: async (service: ApiKeyService, key: string) => {
-    set({ isLoading: true, error: null });
-
-    try {
-      await window.api.settings.setApiKey(service, key);
-      set((state) => ({
-        apiKeyStatuses: { ...state.apiKeyStatuses, [service]: true },
-        isLoading: false,
-      }));
-    } catch (error) {
-      console.error(`Failed to save ${service} API key:`, error);
-      set({
-        isLoading: false,
-        error: error instanceof Error ? error.message : `Failed to save ${service} API key`,
-      });
-      throw error;
-    }
-  },
-
-  deleteApiKey: async (service: ApiKeyService) => {
-    set({ isLoading: true, error: null });
-
-    try {
-      await window.api.settings.deleteApiKey(service);
-      set((state) => ({
-        apiKeyStatuses: { ...state.apiKeyStatuses, [service]: false },
-        isLoading: false,
-      }));
-    } catch (error) {
-      console.error(`Failed to delete ${service} API key:`, error);
-      set({
-        isLoading: false,
-        error: error instanceof Error ? error.message : `Failed to delete ${service} API key`,
       });
     }
   },

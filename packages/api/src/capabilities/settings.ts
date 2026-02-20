@@ -35,22 +35,12 @@ export interface AppSettings {
 
 export interface SettingsCapability {
   /**
-   * Checks if an API key is configured for a service (does NOT return the key)
+   * Checks if an API key is configured for a service via .env
    */
   hasApiKey(service: ApiKeyService): Promise<boolean>;
 
   /**
-   * Stores an API key for a service in secure storage (macOS Keychain)
-   */
-  setApiKey(service: ApiKeyService, key: string): Promise<void>;
-
-  /**
-   * Deletes the API key for a service
-   */
-  deleteApiKey(service: ApiKeyService): Promise<boolean>;
-
-  /**
-   * Returns which services have API keys configured
+   * Returns which services have API keys configured via .env
    */
   getApiKeyStatuses(): Promise<Record<ApiKeyService, boolean>>;
 
