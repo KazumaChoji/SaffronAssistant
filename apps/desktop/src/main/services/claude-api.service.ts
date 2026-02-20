@@ -33,7 +33,8 @@ export class ClaudeAPIService {
     messages: Anthropic.MessageParam[],
     tools: Anthropic.Tool[],
     model: string,
-    systemInstructions?: string
+    systemInstructions?: string,
+    signal?: AbortSignal
   ): AsyncIterable<StreamEvent> {
     if (!this.client) {
       throw new Error('Claude API client not initialized. Please set an API key.');
@@ -55,6 +56,11 @@ export class ClaudeAPIService {
     try {
       console.log('[api] Sending to model:', model, '| tools:', tools.map(t => t.name));
 
+      // Check if already aborted before starting
+      if (signal?.aborted) {
+        return;
+      }
+
       // Stream response
       const stream = this.client.messages.stream({
         model,
@@ -62,7 +68,7 @@ export class ClaudeAPIService {
         messages,
         tools: tools.length > 0 ? tools : undefined,
         system: systemInstructions,
-      });
+      }, { signal });
 
       for await (const event of stream) {
         if (event.type === 'content_block_start') {
@@ -129,6 +135,10 @@ export class ClaudeAPIService {
         }
       }
     } catch (error: any) {
+      // Don't emit error for intentional aborts
+      if (signal?.aborted) {
+        return;
+      }
       yield {
         type: 'error',
         error: error.message || 'Streaming failed',

@@ -124,6 +124,7 @@ export interface AgentCapability {
     message: string,
     images?: string[]
   ) => Promise<{ success: boolean; error?: string }>;
+  stop: (agentId: string) => Promise<{ success: boolean; error?: string }>;
   setAutoApprove: (
     agentId: string,
     enabled: boolean

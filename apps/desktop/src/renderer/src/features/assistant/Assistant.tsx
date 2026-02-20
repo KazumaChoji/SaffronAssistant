@@ -134,6 +134,7 @@ export function Assistant({ onOpenSettings }: AssistantProps) {
     autoApproveSafe,
     pendingScreenshots,
     sendMessage,
+    stopGeneration,
     clearChat,
     setAutoApproveSafe,
     toggleThinking,
@@ -170,6 +171,18 @@ export function Assistant({ onOpenSettings }: AssistantProps) {
     return cleanup;
   }, [addScreenshot]);
 
+  // Cmd+Shift+R to reset chat
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.metaKey && e.shiftKey && e.key === 'r') {
+        e.preventDefault();
+        clearChat().then(() => textareaRef.current?.focus());
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [clearChat]);
+
   // Re-focus after loading
   useEffect(() => {
     if (!isLoading) {
@@ -190,6 +203,9 @@ export function Assistant({ onOpenSettings }: AssistantProps) {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
       handleSubmit();
+    } else if (e.key === 'Escape' && isLoading) {
+      e.preventDefault();
+      stopGeneration();
     }
   };
 
@@ -391,6 +407,17 @@ export function Assistant({ onOpenSettings }: AssistantProps) {
               disabled={isLoading}
               style={{ height: 'auto' }}
             />
+            {isLoading && (
+              <button
+                onClick={stopGeneration}
+                className="flex-shrink-0 w-7 h-7 rounded-md text-white/40 hover:text-white/70 hover:bg-white/[0.06] flex items-center justify-center transition-all"
+                title="Stop generation (Esc)"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="6" y="6" width="12" height="12" rx="2" />
+                </svg>
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -19,6 +19,8 @@ export class PermissionManager {
   private mainWindow: BrowserWindow;
   private registry: ToolRegistry;
   private pendingApprovals: Map<string, PendingToolApproval> = new Map();
+  private pendingResolvers: Map<string, (result: 'allowed' | 'denied') => void> = new Map();
+  private pendingListeners: Map<string, (...args: any[]) => void> = new Map();
   private autoApproveSafe: boolean = false;
 
   constructor(profile: AgentProfile, mainWindow: BrowserWindow, registry: ToolRegistry) {
@@ -90,10 +92,16 @@ export class PermissionManager {
 
     // Wait for response
     return new Promise((resolve) => {
+      const cleanup = (id: string) => {
+        ipcMain.off('agent:tool-approval-response', listener);
+        this.pendingApprovals.delete(id);
+        this.pendingResolvers.delete(id);
+        this.pendingListeners.delete(id);
+      };
+
       const listener = (_event: any, response: ApprovalResponse & { approval_id: string }) => {
         if (response.approval_id === toolCall.id) {
-          ipcMain.off('agent:tool-approval-response', listener);
-          this.pendingApprovals.delete(toolCall.id);
+          cleanup(toolCall.id);
 
           if (response.type === 'approved') {
             resolve('allowed');
@@ -109,12 +117,15 @@ export class PermissionManager {
         }
       };
 
+      // Store resolver and listener for abort cleanup
+      this.pendingResolvers.set(toolCall.id, resolve);
+      this.pendingListeners.set(toolCall.id, listener);
+
       ipcMain.on('agent:tool-approval-response', listener);
 
       setTimeout(() => {
         if (this.pendingApprovals.has(toolCall.id)) {
-          ipcMain.off('agent:tool-approval-response', listener);
-          this.pendingApprovals.delete(toolCall.id);
+          cleanup(toolCall.id);
           console.log(`Tool approval timeout for ${toolCall.name}`);
           resolve('denied');
         }
@@ -131,6 +142,21 @@ export class PermissionManager {
       throw new Error(`Unknown tool: ${toolName}`);
     }
     return { name: tool.name, description: tool.description, input_schema: tool.input_schema };
+  }
+
+  /**
+   * Abort all pending approvals — resolves them as 'denied' and cleans up listeners
+   */
+  abortAll(): void {
+    for (const [id, listener] of this.pendingListeners) {
+      ipcMain.off('agent:tool-approval-response', listener);
+    }
+    for (const [id, resolve] of this.pendingResolvers) {
+      resolve('denied');
+    }
+    this.pendingApprovals.clear();
+    this.pendingResolvers.clear();
+    this.pendingListeners.clear();
   }
 
   /**

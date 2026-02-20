@@ -84,6 +84,7 @@ const agentAPI: AgentCapability = {
   create: (profileId) => ipcRenderer.invoke('agent:create', profileId),
   sendMessageStreaming: (agentId, message, images) =>
     ipcRenderer.invoke('agent:send-message-streaming', agentId, message, images),
+  stop: (agentId) => ipcRenderer.invoke('agent:stop', agentId),
   setAutoApprove: (agentId, enabled) =>
     ipcRenderer.invoke('agent:set-auto-approve', agentId, enabled),
   terminate: (agentId) => ipcRenderer.invoke('agent:terminate', agentId),

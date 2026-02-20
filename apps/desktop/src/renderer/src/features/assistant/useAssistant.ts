@@ -61,6 +61,7 @@ interface AssistantStore {
 
   // Actions
   sendMessage: (message: string, imageBase64?: string) => Promise<void>;
+  stopGeneration: () => Promise<void>;
   clearChat: () => Promise<void>;
   setAutoApproveSafe: (enabled: boolean) => Promise<void>;
   addScreenshot: () => Promise<void>;
@@ -228,13 +229,63 @@ export const useAssistant = create<AssistantStore>((set, get) => ({
     }
   },
 
-  // Clear chat - reset everything
+  // Stop the current generation
+  stopGeneration: async () => {
+    const { currentAgentId, streamingMessage, messages } = get();
+
+    if (!currentAgentId) return;
+
+    try {
+      await window.api.agent.stop(currentAgentId);
+    } catch (error) {
+      console.error('Failed to stop agent:', error);
+    }
+
+    // Finalize whatever we have so far into a message
+    if (streamingMessage) {
+      const finalSegments = [...streamingMessage.segments];
+      if (streamingMessage.currentText) {
+        finalSegments.push({ type: 'text' as const, content: streamingMessage.currentText });
+      }
+
+      // Only add as a message if there's actual content
+      if (finalSegments.length > 0) {
+        const finalMessage: Message = {
+          id: streamingMessage.id,
+          role: 'assistant',
+          segments: finalSegments,
+          thinking: streamingMessage.thinking || undefined,
+          thinkingExpanded: false,
+          timestamp: Date.now(),
+        };
+        set({
+          messages: [...messages, finalMessage],
+          streamingMessage: null,
+          isLoading: false,
+          pendingApproval: null,
+        });
+      } else {
+        set({
+          streamingMessage: null,
+          isLoading: false,
+          pendingApproval: null,
+        });
+      }
+    } else {
+      set({
+        isLoading: false,
+        pendingApproval: null,
+      });
+    }
+  },
+
+  // Clear chat - stop generation, terminate agent, reset everything
   clearChat: async () => {
     const { currentAgentId } = get();
 
-    // Terminate agent if exists
     if (currentAgentId) {
       try {
+        // Terminate will abort in-flight work before cleanup
         await window.api.agent.terminate(currentAgentId);
       } catch (error) {
         console.error('Failed to terminate agent:', error);
@@ -315,8 +366,10 @@ export const useAssistant = create<AssistantStore>((set, get) => ({
 
   // Handle streaming events
   handleStreamEvent: (data: { agent_id: string; event: StreamEvent }) => {
-    const { streamingMessage, messages } = get();
+    const { streamingMessage, messages, currentAgentId } = get();
 
+    // Ignore events from stale/terminated agents
+    if (data.agent_id !== currentAgentId) return;
     if (!streamingMessage) return;
 
     const event = data.event;

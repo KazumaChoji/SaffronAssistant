@@ -150,6 +150,21 @@ export class AgentManager extends EventEmitter {
   }
 
   /**
+   * Stop an agent's current generation without destroying it
+   */
+  stopAgent(agentId: string): void {
+    const agent = this.activeAgents.get(agentId);
+    if (!agent) return;
+
+    agent.abort();
+
+    this.emit('agent:status-change', {
+      id: agentId,
+      status: 'idle',
+    });
+  }
+
+  /**
    * Terminate an agent session
    */
   async terminateAgent(agentId: string): Promise<void> {
@@ -157,6 +172,9 @@ export class AgentManager extends EventEmitter {
     if (!agent) {
       return;
     }
+
+    // Abort any in-flight work first
+    agent.abort();
 
     // Save final state
     await this.saveSession(agentId);

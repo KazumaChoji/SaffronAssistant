@@ -91,6 +91,16 @@ export function registerAgentHandlers(
     }
   });
 
+  // Stop an agent's current generation
+  ipcMain.handle('agent:stop', async (_event, agentId: string) => {
+    try {
+      agentManager.stopAgent(agentId);
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  });
+
   // Terminate an agent
   ipcMain.handle('agent:terminate', async (_event, agentId: string) => {
     try {

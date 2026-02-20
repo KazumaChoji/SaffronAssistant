@@ -43,6 +43,7 @@ export class AgentSession {
   private toolExecutor: ToolExecutor;
   private registry: ToolRegistry;
   private apiService: ClaudeAPIService;
+  private abortController: AbortController | null = null;
 
   constructor(
     config: AgentSessionConfig,
@@ -86,6 +87,10 @@ export class AgentSession {
 
     this.turnCount++;
 
+    // Create abort controller for this turn
+    this.abortController = new AbortController();
+    const signal = this.abortController.signal;
+
     // 2. Execute the agentic loop with streaming
     let hasToolCalls = true;
     let iterations = 0;
@@ -93,6 +98,9 @@ export class AgentSession {
     let totalOutputTokens = 0;
 
     while (hasToolCalls && iterations < this.maxIterations) {
+      // Check abort before each iteration
+      if (signal.aborted) return;
+
       // 3. Build model request
       const request = this.buildModelRequest();
 
@@ -104,8 +112,10 @@ export class AgentSession {
         request.messages,
         request.tools,
         request.model,
-        this.profile.system_instructions
+        this.profile.system_instructions,
+        signal
       )) {
+        if (signal.aborted) return;
         if (event.type === 'text') {
           turnText += event.content;
           yield event;
@@ -146,11 +156,15 @@ export class AgentSession {
         };
         this.conversationHistory.push(assistantMessage);
 
+        // Check abort before tool execution
+        if (signal.aborted) return;
+
         // 6. Check permissions for all tool calls (sequential, may prompt user)
         const approvedCalls: ToolCall[] = [];
         const deniedResults: { toolCall: ToolCall; result: ToolResult }[] = [];
 
         for (const toolCall of toolCalls) {
+          if (signal.aborted) return;
           console.log('[agent] Checking permission for:', toolCall.name);
           const permission = await this.permissionManager.checkPermission(toolCall);
           console.log('[agent] Permission result:', toolCall.name, '→', permission);
@@ -227,9 +241,12 @@ export class AgentSession {
           },
         };
 
+        this.abortController = null;
         return;
       }
     }
+
+    this.abortController = null;
 
     // Max iterations reached
     yield {
@@ -424,5 +441,17 @@ export class AgentSession {
 
   public setAutoApproveSafe(enabled: boolean): void {
     this.permissionManager.setAutoApproveSafe(enabled);
+  }
+
+  /**
+   * Abort the current turn — cancels the API stream and rejects pending approvals
+   */
+  public abort(): void {
+    if (this.abortController) {
+      this.abortController.abort();
+      this.abortController = null;
+    }
+    this.permissionManager.abortAll();
+    this.status = 'idle';
   }
 }
