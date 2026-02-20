@@ -89,7 +89,6 @@ export class AgentManager extends EventEmitter {
   async *sendMessageStreaming(
     agentId: string,
     message: string,
-    imageBase64?: string,
     images?: string[]
   ): AsyncIterable<StreamEvent> {
     const agent = this.activeAgents.get(agentId);
@@ -109,7 +108,7 @@ export class AgentManager extends EventEmitter {
 
     try {
       // Stream all events from the agent
-      for await (const event of agent.executeTurnStreaming(message, imageBase64, images)) {
+      for await (const event of agent.executeTurnStreaming(message, images)) {
         yield event;
       }
 

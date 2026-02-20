@@ -172,8 +172,11 @@ export const useAssistant = create<AssistantStore>((set, get) => ({
     const { pendingScreenshots } = get();
     const screenshots = pendingScreenshots.map(s => s.base64);
 
-    if (!imageBase64 && screenshots.length > 0) {
-      imageBase64 = screenshots[0];
+    // Combine all images into a single array
+    const images: string[] = [];
+    if (imageBase64) images.push(imageBase64);
+    for (const s of screenshots) {
+      if (s !== imageBase64) images.push(s);
     }
 
     const agentId = await ensureAgent(get, set);
@@ -185,8 +188,8 @@ export const useAssistant = create<AssistantStore>((set, get) => ({
       role: 'user',
       segments: [{ type: 'text', content: message }],
       timestamp: Date.now(),
-      imageBase64,
-      screenshots: screenshots.length > 0 ? screenshots : undefined,
+      imageBase64: images[0],
+      screenshots: images.length > 0 ? images : undefined,
     };
 
     set({
@@ -206,8 +209,7 @@ export const useAssistant = create<AssistantStore>((set, get) => ({
       const response = await window.api.agent.sendMessageStreaming(
         agentId,
         message,
-        imageBase64,
-        screenshots
+        images.length > 0 ? images : undefined
       );
 
       if (!response.success) {

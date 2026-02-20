@@ -13,6 +13,20 @@ build/
 out/
 *.tsbuildinfo
 
+# Compiled TypeScript in source dirs (built by tsc/electron-vite)
+packages/**/*.js
+packages/**/*.js.map
+packages/**/*.d.ts
+packages/**/*.d.ts.map
+apps/**/src/**/*.js
+apps/**/src/**/*.js.map
+apps/**/src/**/*.d.ts
+apps/**/src/**/*.d.ts.map
+apps/**/*.config.js
+apps/**/*.config.js.map
+apps/**/*.config.d.ts
+apps/**/*.config.d.ts.map
+
 # Environment
 .env
 .env.local

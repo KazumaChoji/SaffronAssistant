@@ -71,8 +71,7 @@ export type ApprovalResponse =
 export interface UserMessage {
   role: 'user';
   content: string;
-  image_base64?: string; // For backward compatibility
-  images?: string[]; // Multiple images
+  images?: string[];
   timestamp: number;
 }
 

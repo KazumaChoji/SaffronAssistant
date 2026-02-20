@@ -84,6 +84,36 @@ export type StreamEvent =
   | UsageStreamEvent;
 
 /**
+ * History message types returned by getHistory
+ */
+export interface HistoryUserMessage {
+  role: 'user';
+  content: string;
+  images?: string[];
+  timestamp: number;
+}
+
+export interface HistoryAssistantMessage {
+  role: 'assistant';
+  content: string;
+  tool_calls?: { id: string; name: string; input: Record<string, unknown> }[];
+  timestamp: number;
+}
+
+export interface HistoryToolMessage {
+  role: 'tool';
+  tool_results: {
+    tool_call_id: string;
+    success: boolean;
+    output?: string;
+    error?: string;
+  }[];
+  timestamp: number;
+}
+
+export type HistoryMessage = HistoryUserMessage | HistoryAssistantMessage | HistoryToolMessage;
+
+/**
  * Agent capability interface
  */
 export interface AgentCapability {
@@ -92,7 +122,6 @@ export interface AgentCapability {
   sendMessageStreaming: (
     agentId: string,
     message: string,
-    imageBase64?: string,
     images?: string[]
   ) => Promise<{ success: boolean; error?: string }>;
   setAutoApprove: (
@@ -107,7 +136,7 @@ export interface AgentCapability {
   get: (agentId: string) => Promise<{ success: boolean; agent?: AgentInfo; error?: string }>;
   getHistory: (
     agentId: string
-  ) => Promise<{ success: boolean; history?: any[]; error?: string }>;
+  ) => Promise<{ success: boolean; history?: HistoryMessage[]; error?: string }>;
 
   // Event listeners
   onCreated: (callback: (data: { id: string; profile_id: string; profile_name: string }) => void) => () => void;

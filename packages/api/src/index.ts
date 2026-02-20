@@ -21,6 +21,10 @@ export type {
   ToolResultStreamEvent,
   ErrorStreamEvent,
   UsageStreamEvent,
+  HistoryMessage,
+  HistoryUserMessage,
+  HistoryAssistantMessage,
+  HistoryToolMessage,
 } from './capabilities/agent.js';
 
 // Types

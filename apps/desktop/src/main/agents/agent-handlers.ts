@@ -23,13 +23,12 @@ export function registerAgentHandlers(
   // Send a message to an agent with streaming
   ipcMain.handle(
     'agent:send-message-streaming',
-    async (_event, agentId: string, message: string, imageBase64?: string, images?: string[]) => {
+    async (_event, agentId: string, message: string, images?: string[]) => {
       try {
         // Stream events to the renderer process
         for await (const streamEvent of agentManager.sendMessageStreaming(
           agentId,
           message,
-          imageBase64,
           images
         )) {
           // Send each stream event to the renderer

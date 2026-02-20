@@ -72,14 +72,12 @@ export class AgentSession {
    */
   async *executeTurnStreaming(
     userInput: string,
-    imageBase64?: string,
     images?: string[]
   ): AsyncIterable<StreamEvent> {
     // 1. Create user message
     const userMessage: UserMessage = {
       role: 'user',
       content: userInput,
-      image_base64: imageBase64,
       images: images,
       timestamp: Date.now(),
     };
@@ -281,9 +279,8 @@ export class AgentSession {
           text: msg.content,
         });
 
-        // Add images (support multiple)
-        const imagesToAdd = msg.images || (msg.image_base64 ? [msg.image_base64] : []);
-        for (const imageDataUri of imagesToAdd) {
+        // Add images
+        for (const imageDataUri of msg.images || []) {
           const { mediaType, data } = this.parseBase64Image(imageDataUri);
           content.push({
             type: 'image',
