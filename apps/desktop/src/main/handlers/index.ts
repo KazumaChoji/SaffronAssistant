@@ -357,6 +357,43 @@ export function registerHandlers(
     }
   });
 
+  // Work clock handlers
+  ipcMain.handle('work:clockIn', async () => {
+    try {
+      return services.database.clockIn();
+    } catch (error) {
+      console.error('Failed to clock in:', error);
+      throw error;
+    }
+  });
+
+  ipcMain.handle('work:clockOut', async (_event, id: number) => {
+    try {
+      return services.database.clockOut(id);
+    } catch (error) {
+      console.error('Failed to clock out:', error);
+      throw error;
+    }
+  });
+
+  ipcMain.handle('work:getSessions', async (_event, since?: number) => {
+    try {
+      return services.database.getWorkSessions(since);
+    } catch (error) {
+      console.error('Failed to get work sessions:', error);
+      return [];
+    }
+  });
+
+  ipcMain.handle('work:deleteSession', async (_event, id: number) => {
+    try {
+      services.database.deleteWorkSession(id);
+    } catch (error) {
+      console.error('Failed to delete work session:', error);
+      throw error;
+    }
+  });
+
   // Database reset
   ipcMain.handle('system:resetDatabase', async () => {
     try {

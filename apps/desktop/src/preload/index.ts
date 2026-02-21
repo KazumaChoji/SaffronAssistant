@@ -7,6 +7,7 @@ import type {
   NotesCapability,
   TodosCapability,
   TrackerCapability,
+  WorkClockCapability,
   ElectronAPI,
 } from '@app/api';
 
@@ -164,6 +165,14 @@ const trackerAPI: TrackerCapability = {
   setTitle: (title) => ipcRenderer.invoke('tracker:setTitle', title),
 };
 
+// Work Clock API
+const workAPI: WorkClockCapability = {
+  clockIn: () => ipcRenderer.invoke('work:clockIn'),
+  clockOut: (id) => ipcRenderer.invoke('work:clockOut', id),
+  getSessions: (since) => ipcRenderer.invoke('work:getSessions', since),
+  deleteSession: (id) => ipcRenderer.invoke('work:deleteSession', id),
+};
+
 // Expose the complete API to renderer
 const api = {
   screen: screenAPI,
@@ -173,6 +182,7 @@ const api = {
   notes: notesAPI,
   todos: todosAPI,
   tracker: trackerAPI,
+  work: workAPI,
 } satisfies ElectronAPI;
 
 contextBridge.exposeInMainWorld('api', api);

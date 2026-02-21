@@ -127,6 +127,15 @@ export class DatabaseService {
       );
     `);
 
+    // Work sessions table (clock in / clock out)
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS work_sessions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        clock_in INTEGER NOT NULL,
+        clock_out INTEGER
+      );
+    `);
+
     // Legacy secrets table (no longer used - API keys now read from .env)
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS secrets (
@@ -385,6 +394,32 @@ export class DatabaseService {
 
   setTrackerTitle(title: string): void {
     this.db.prepare("INSERT OR REPLACE INTO tracker_config (key, value) VALUES ('title', ?)").run(title);
+  }
+
+  // ── Work Sessions ──
+
+  clockIn(): { id: number; clockIn: number; clockOut: number | null } {
+    const now = Date.now();
+    const result = this.db.prepare('INSERT INTO work_sessions (clock_in) VALUES (?)').run(now);
+    return { id: Number(result.lastInsertRowid), clockIn: now, clockOut: null };
+  }
+
+  clockOut(id: number): { id: number; clockIn: number; clockOut: number | null } | null {
+    const now = Date.now();
+    this.db.prepare('UPDATE work_sessions SET clock_out = ? WHERE id = ? AND clock_out IS NULL').run(now, id);
+    const row = this.db.prepare('SELECT * FROM work_sessions WHERE id = ?').get(id) as { id: number; clock_in: number; clock_out: number | null } | undefined;
+    if (!row) return null;
+    return { id: row.id, clockIn: row.clock_in, clockOut: row.clock_out };
+  }
+
+  getWorkSessions(since?: number): Array<{ id: number; clockIn: number; clockOut: number | null }> {
+    const cutoff = since ?? 0;
+    const rows = this.db.prepare('SELECT * FROM work_sessions WHERE clock_in >= ? OR clock_out IS NULL ORDER BY clock_in DESC').all(cutoff) as Array<{ id: number; clock_in: number; clock_out: number | null }>;
+    return rows.map((r) => ({ id: r.id, clockIn: r.clock_in, clockOut: r.clock_out }));
+  }
+
+  deleteWorkSession(id: number): void {
+    this.db.prepare('DELETE FROM work_sessions WHERE id = ?').run(id);
   }
 
   /**
