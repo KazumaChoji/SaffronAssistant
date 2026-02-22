@@ -31,7 +31,7 @@ export class ClaudeAPIService {
    */
   async *streamWithTools(
     messages: Anthropic.MessageParam[],
-    tools: Anthropic.Tool[],
+    tools: any[],
     model: string,
     systemInstructions?: string,
     signal?: AbortSignal
@@ -62,19 +62,29 @@ export class ClaudeAPIService {
       }
 
       // Stream response
+      const hasBuiltinWebSearch = tools.some((t) => t.type === 'web_search_20250305');
       const stream = this.client.messages.stream({
         model,
         max_tokens: AppConfig.ai.maxTokens,
         messages,
         tools: tools.length > 0 ? tools : undefined,
         system: systemInstructions,
-      }, { signal });
+      } as any, {
+        signal,
+        headers: hasBuiltinWebSearch ? { 'anthropic-beta': 'web-search-2025-03-05' } : undefined,
+      });
 
       for await (const event of stream) {
         if (event.type === 'content_block_start') {
+          // Skip server-side built-in tool blocks (e.g. server_tool_use, server_tool_result)
+          // — Anthropic executes these transparently, no client handling needed.
+          // Deltas for skipped blocks are safely ignored (contentBlocks.get → undefined → continue).
+          const blockType = (event.content_block as any).type as string;
+          if (!['text', 'tool_use', 'thinking'].includes(blockType)) continue;
+
           const block: ContentBlockState = {
             index: event.index,
-            type: event.content_block.type as 'text' | 'tool_use' | 'thinking',
+            type: blockType as 'text' | 'tool_use' | 'thinking',
           };
 
           if (event.content_block.type === 'tool_use') {

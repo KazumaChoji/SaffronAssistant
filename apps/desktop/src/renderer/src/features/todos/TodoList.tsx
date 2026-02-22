@@ -75,6 +75,18 @@ export function TodoList() {
     if (loaded) inputRef.current?.focus();
   }, [loaded]);
 
+  // Live refresh when a tool modifies todos from the main process
+  useEffect(() => {
+    const unsub = window.api.todos.onTodosChanged(() => {
+      window.api.todos.getAll().then((rows) => {
+        const active = rows.filter((r) => !r.done);
+        const done = rows.filter((r) => r.done);
+        setTodos([...active, ...done].map((r) => ({ ...r, pending: false, completedAt: r.completedAt ?? null })));
+      });
+    });
+    return unsub;
+  }, []);
+
   async function addTodo() {
     const text = input.trim();
     if (!text) return;

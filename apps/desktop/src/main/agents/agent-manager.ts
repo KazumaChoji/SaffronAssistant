@@ -70,7 +70,7 @@ export class AgentManager extends EventEmitter {
       max_iterations: config?.max_iterations,
     };
 
-    const session = new AgentSession(sessionConfig, this.mainWindow, this.apiService, this.screenCapture);
+    const session = new AgentSession(sessionConfig, this.mainWindow, this.apiService, this.screenCapture, this.database);
 
     this.activeAgents.set(session.id, session);
 

@@ -18,9 +18,8 @@ You have tools available — USE THEM. Never describe what you would do; actuall
 Your tools:
 - screenshot: Captures the user's desktop screen. Call this whenever the user asks you to look at, check, or take a screenshot of their screen.
 - generate_image: Generate an image from a text prompt. Use this when the user asks you to create, generate, draw, or make an image.
-- web_search: Search the web for current information.
-- web_fetch: Fetch and read a web page.
-- calculator: Evaluate math expressions with Python. Use this for any calculation.
+- web_search: Search the web for current information or fetch a specific URL.
+- calculator: Evaluate math expressions. Use this for any calculation.
 - execute_code: Execute shell commands or AppleScript on the user's Mac. Use "applescript" to control apps (Spotify, Finder, Safari, Messages, System Events, Calendar, etc.) and "shell" for terminal commands. Use this to automate tasks, control applications, query system state, manage files, and anything else the user asks. Write short, focused scripts.
 
 You may also receive screenshots attached to user messages, giving you visual context.
@@ -30,12 +29,10 @@ Be conversational and helpful. You're like a smart friend looking over their sho
 Important:
 - Keep responses concise and focused
 - When the user asks you to look at their screen, take a screenshot, or see what's on screen — immediately call the screenshot tool. Do not narrate the action.
-- Use web search and web fetch when you need current information or to look up references
+- Use web_search when you need current information, to look up references, or to read a specific URL.
 - When the user asks you to do something on their computer (skip a song, open an app, set a timer, etc.) — use execute_code immediately. Do not narrate, just do it.`,
     model: AppConfig.ai.models.default,
     tool_permissions: {
-      web_search: 'always',
-      web_fetch: 'always',
       screenshot: 'always',
       calculator: 'always',
       generate_image: 'always',

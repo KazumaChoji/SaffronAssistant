@@ -8,6 +8,7 @@ import type {
   TodosCapability,
   TrackerCapability,
   WorkClockCapability,
+  ClockCapability,
   ElectronAPI,
 } from '@app/api';
 
@@ -147,6 +148,11 @@ const notesAPI: NotesCapability = {
   getImages: () => ipcRenderer.invoke('notes:getImages'),
   pushVersion: (content, noteId) => ipcRenderer.invoke('notes:pushVersion', content, noteId),
   getVersions: (noteId) => ipcRenderer.invoke('notes:getVersions', noteId),
+  onContentChanged: (callback) => {
+    const handler = (_event: any, noteId: string) => callback(noteId);
+    ipcRenderer.on('notes:content-changed', handler);
+    return () => ipcRenderer.removeListener('notes:content-changed', handler);
+  },
 };
 
 // Todos API
@@ -155,6 +161,11 @@ const todosAPI: TodosCapability = {
   add: (text) => ipcRenderer.invoke('todos:add', text),
   update: (id, done) => ipcRenderer.invoke('todos:update', id, done),
   delete: (id) => ipcRenderer.invoke('todos:delete', id),
+  onTodosChanged: (callback) => {
+    const handler = () => callback();
+    ipcRenderer.on('todos:changed', handler);
+    return () => ipcRenderer.removeListener('todos:changed', handler);
+  },
 };
 
 // Tracker API
@@ -173,6 +184,23 @@ const workAPI: WorkClockCapability = {
   deleteSession: (id) => ipcRenderer.invoke('work:deleteSession', id),
 };
 
+// Clock API
+const clockAPI: ClockCapability = {
+  onCommand: (callback) => {
+    const handler = (_event: any, cmd: any) => callback(cmd);
+    ipcRenderer.on('clock:command', handler);
+    return () => ipcRenderer.removeListener('clock:command', handler);
+  },
+  onStatusRequest: (callback) => {
+    const handler = (_event: any, requestId: string) => callback(requestId);
+    ipcRenderer.on('clock:statusRequest', handler);
+    return () => ipcRenderer.removeListener('clock:statusRequest', handler);
+  },
+  sendStatus: (requestId, status) => {
+    ipcRenderer.send('clock:statusResponse', requestId, status);
+  },
+};
+
 // Expose the complete API to renderer
 const api = {
   screen: screenAPI,
@@ -183,6 +211,7 @@ const api = {
   todos: todosAPI,
   tracker: trackerAPI,
   work: workAPI,
+  clock: clockAPI,
 } satisfies ElectronAPI;
 
 contextBridge.exposeInMainWorld('api', api);

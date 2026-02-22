@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import type { ClockCommand } from '@app/api';
 
 // ── Helpers ──
 
@@ -206,6 +207,68 @@ export function Clock() {
   useEffect(() => () => {
     cancelAnimationFrame(tmRafRef.current);
     if (tmTimeoutRef.current) clearTimeout(tmTimeoutRef.current);
+  }, []);
+
+  // ── Tool command handling ──
+  // Ref updated every render so the listener always has access to fresh state/functions
+  const cmdHandlerRef = useRef<(cmd: ClockCommand) => void>(() => {});
+  useEffect(() => {
+    cmdHandlerRef.current = (cmd: ClockCommand) => {
+      if (cmd.target === 'timer') {
+        if (cmd.action === 'start') {
+          const totalMs = (cmd.hours * 3600 + cmd.minutes * 60 + cmd.seconds) * 1000;
+          if (totalMs > 0) {
+            const endAt = Date.now() + totalMs;
+            saveTimer({ endAt });
+            tmRunCountdown(endAt);
+          }
+        } else if (cmd.action === 'pause') {
+          if (tmRunning) tmPause();
+        } else if (cmd.action === 'resume') {
+          tmStart();
+        } else if (cmd.action === 'reset') {
+          tmReset();
+        }
+      } else if (cmd.target === 'stopwatch') {
+        if (cmd.action === 'start') {
+          if (!swRunning) swStart();
+        } else if (cmd.action === 'pause') {
+          if (swRunning) swPause();
+        } else if (cmd.action === 'reset') {
+          swReset();
+        } else if (cmd.action === 'lap') {
+          if (swRunning) swLap();
+        }
+      }
+    };
+  });
+
+  useEffect(() => {
+    const unsub = window.api.clock.onCommand((cmd) => cmdHandlerRef.current(cmd));
+    return unsub;
+  }, []);
+
+  // Status request handler — also uses a ref to avoid stale state
+  const statusHandlerRef = useRef<(requestId: string) => void>(() => {});
+  useEffect(() => {
+    statusHandlerRef.current = (requestId: string) => {
+      window.api.clock.sendStatus(requestId, {
+        timer: {
+          state: tmFinished ? 'finished' : tmRunning ? 'running' : tmRemaining > 0 ? 'paused' : 'stopped',
+          remainingMs: tmRemaining,
+        },
+        stopwatch: {
+          state: swRunning ? 'running' : 'stopped',
+          elapsedMs: swElapsed,
+          lapCount: laps.length,
+        },
+      });
+    };
+  });
+
+  useEffect(() => {
+    const unsub = window.api.clock.onStatusRequest((id) => statusHandlerRef.current(id));
+    return unsub;
   }, []);
 
   // Derive display values

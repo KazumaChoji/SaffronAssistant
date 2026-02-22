@@ -379,18 +379,48 @@ export const NotesEditor = forwardRef<NotesEditorHandle, { noteId?: string }>(fu
     return attachResizeHandlers(editorRef.current, save);
   }, [save]);
 
-  // Flush on unmount + visibility
+  // Flush on unmount, visibility change, and window close
   useEffect(() => {
     const flushOnHide = () => {
       if (document.hidden) saveNow();
     };
+    const flushOnUnload = () => saveNow();
     document.addEventListener('visibilitychange', flushOnHide);
+    window.addEventListener('beforeunload', flushOnUnload);
     return () => {
       document.removeEventListener('visibilitychange', flushOnHide);
+      window.removeEventListener('beforeunload', flushOnUnload);
       if (saveTimer.current) clearTimeout(saveTimer.current);
       saveNow();
     };
   }, []);
+
+  // Live refresh when a tool writes to this note from the main process
+  useEffect(() => {
+    const unsub = window.api.notes.onContentChanged((changedNoteId) => {
+      const myId = noteId ?? 'default';
+      if (changedNoteId !== myId) return;
+      if (!editorRef.current) return;
+
+      // Flush any in-progress user edits as a version before overwriting
+      if (saveTimer.current) {
+        clearTimeout(saveTimer.current);
+        saveTimer.current = undefined;
+      }
+      const currentHTML = getCleanHTML(editorRef.current);
+      if (currentHTML !== lastSavedHTML.current) {
+        window.api.notes.pushVersion(currentHTML, noteId);
+      }
+
+      // Reload from DB
+      window.api.notes.getContent(noteId).then((html) => {
+        if (!editorRef.current) return;
+        editorRef.current.innerHTML = DOMPurify.sanitize(html || '');
+        lastSavedHTML.current = html || '';
+      });
+    });
+    return unsub;
+  }, [noteId]);
 
   useImperativeHandle(ref, () => ({
     undo: () => undoFn(),

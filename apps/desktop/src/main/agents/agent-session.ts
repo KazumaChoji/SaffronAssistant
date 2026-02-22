@@ -21,8 +21,10 @@ import type { ToolRegistry } from './tool-registry';
 import { PermissionManager } from './permission-manager';
 import { ToolExecutor } from './tool-executor';
 import { ClaudeAPIService } from '../services/claude-api.service';
-import type { BrowserWindow } from 'electron';
+import { ipcMain, type BrowserWindow } from 'electron';
 import type { ScreenCaptureService } from '../services/screen-capture.service';
+import type { DatabaseService } from '../services/database.service';
+import type { ClockStatus } from '@app/api';
 import { AppConfig } from '../config/app-config';
 
 export type AgentStatus = 'idle' | 'thinking' | 'executing_tools' | 'waiting_approval';
@@ -50,13 +52,46 @@ export class AgentSession {
     mainWindow: BrowserWindow,
     apiService: ClaudeAPIService,
     screenCapture?: ScreenCaptureService,
+    database?: DatabaseService,
   ) {
     this.id = this.generateId();
     this.profile = config.profile;
     this.maxIterations = config.max_iterations || config.profile.max_iterations;
     this.workingDirectory = config.working_directory || process.cwd();
 
-    this.registry = createToolRegistry(screenCapture);
+    const getClockStatus = (): Promise<ClockStatus> =>
+      new Promise((resolve) => {
+        const requestId = `clk-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        const fallback: ClockStatus = {
+          timer: { state: 'stopped', remainingMs: 0 },
+          stopwatch: { state: 'stopped', elapsedMs: 0, lapCount: 0 },
+        };
+        const timeout = setTimeout(() => {
+          ipcMain.removeListener('clock:statusResponse', handler);
+          resolve(fallback);
+        }, 2000);
+        const handler = (_event: any, id: string, status: ClockStatus) => {
+          if (id !== requestId) return;
+          clearTimeout(timeout);
+          ipcMain.removeListener('clock:statusResponse', handler);
+          resolve(status);
+        };
+        ipcMain.on('clock:statusResponse', handler);
+        mainWindow.webContents.send('clock:statusRequest', requestId);
+      });
+
+    this.registry = createToolRegistry({
+      screenCapture,
+      database,
+      notifyNoteChanged: database
+        ? (noteId) => mainWindow.webContents.send('notes:content-changed', noteId)
+        : undefined,
+      notifyTodosChanged: database
+        ? () => mainWindow.webContents.send('todos:changed')
+        : undefined,
+      sendClockCommand: (cmd) => mainWindow.webContents.send('clock:command', cmd),
+      getClockStatus,
+    });
     this.permissionManager = new PermissionManager(this.profile, mainWindow, this.registry);
     this.toolExecutor = new ToolExecutor(this.registry);
     this.apiService = apiService;
@@ -389,12 +424,18 @@ export class AgentSession {
   }
 
   /**
-   * Get enabled tools for this agent's profile
+   * Get enabled tools for this agent's profile.
+   * Custom tools come from the registry; Anthropic built-in tools are appended directly.
    */
-  private getEnabledTools(): Anthropic.Tool[] {
-    return this.registry.getDefinitions(tool =>
-      this.profile.tool_permissions[tool.name] !== 'never'
-    ) as Anthropic.Tool[];
+  private getEnabledTools(): any[] {
+    const custom = this.registry.getDefinitions(
+      (tool) => this.profile.tool_permissions[tool.name] !== 'never'
+    );
+    return [
+      ...custom,
+      // Anthropic's built-in web search — executed server-side, no local handler needed
+      { type: 'web_search_20250305', name: 'web_search' },
+    ];
   }
 
   /**
