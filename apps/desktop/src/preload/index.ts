@@ -7,7 +7,6 @@ import type {
   NotesCapability,
   TodosCapability,
   TrackerCapability,
-  WorkClockCapability,
   ClockCapability,
   ElectronAPI,
 } from '@app/api';
@@ -176,14 +175,6 @@ const trackerAPI: TrackerCapability = {
   setTitle: (title) => ipcRenderer.invoke('tracker:setTitle', title),
 };
 
-// Work Clock API
-const workAPI: WorkClockCapability = {
-  clockIn: () => ipcRenderer.invoke('work:clockIn'),
-  clockOut: (id) => ipcRenderer.invoke('work:clockOut', id),
-  getSessions: (since) => ipcRenderer.invoke('work:getSessions', since),
-  deleteSession: (id) => ipcRenderer.invoke('work:deleteSession', id),
-};
-
 // Clock API
 const clockAPI: ClockCapability = {
   onCommand: (callback) => {
@@ -210,7 +201,6 @@ const api = {
   notes: notesAPI,
   todos: todosAPI,
   tracker: trackerAPI,
-  work: workAPI,
   clock: clockAPI,
 } satisfies ElectronAPI;
 

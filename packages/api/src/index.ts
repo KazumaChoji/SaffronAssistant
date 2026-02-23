@@ -72,19 +72,6 @@ export interface TrackerCapability {
   setTitle(title: string): Promise<void>;
 }
 
-export interface WorkSession {
-  id: number;
-  clockIn: number;
-  clockOut: number | null;
-}
-
-export interface WorkClockCapability {
-  clockIn(): Promise<WorkSession>;
-  clockOut(id: number): Promise<WorkSession | null>;
-  getSessions(since?: number): Promise<WorkSession[]>;
-  deleteSession(id: number): Promise<void>;
-}
-
 export type ClockCommand =
   | { target: 'timer'; action: 'start'; hours: number; minutes: number; seconds: number }
   | { target: 'timer'; action: 'pause' }
@@ -121,7 +108,6 @@ export interface ElectronAPI {
   notes: NotesCapability;
   todos: TodosCapability;
   tracker: TrackerCapability;
-  work: WorkClockCapability;
   clock: ClockCapability;
 }
 
